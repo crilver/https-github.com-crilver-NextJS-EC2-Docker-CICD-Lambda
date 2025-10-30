@@ -1,0 +1,47 @@
+name: Deploy to EC2 (through SSH)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Copy project to EC2
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          source: "."
+          target: "~/app"
+
+      # SSH into EC2 and deploy
+      - name: Build and run Docker on EC2
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            cd ~/app
+
+            echo "Stopping old container (if any)..."
+            sudo docker stop my-next-app || true
+            sudo docker rm my-next-app || true
+
+            echo "Building new Docker image..."
+            sudo docker build -t my-next-app .
+
+            echo "Starting new container..."
+            sudo docker run -d -p 80:3000 --name my-next-app my-next-app
+
+            echo "Deployment complete"
