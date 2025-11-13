@@ -73,11 +73,9 @@ jobs:
         run: |
           STATUS=${{ job.status }}
           echo "Sending status $STATUS to Lambda..."
-          curl -X POST ${{ secrets.LAMBDA_URL }} \
+          curl -X POST "${{ secrets.LAMBDA_URL }}" \
             -H "Content-Type: application/json" \
-            -d '{
-              "repository": "${{ github.repository }}",
-              "job": "CI/CD Pipeline",
-              "status": "'"$STATUS"'",
-              "details": "Run ID: ${{ github.run_id }}"
-            }'
+            -d "{\"repository\": \"${{ github.repository }}\", \
+                \"job\": \"CI/CD Pipeline\", \
+                \"status\": \"${STATUS}\", \
+                \"details\": \"Run ID: ${{ github.run_id }}\"}"
