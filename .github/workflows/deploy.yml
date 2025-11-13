@@ -62,3 +62,22 @@ jobs:
             sudo docker run -d -p 80:3000 --name my-next-app ghcr.io/${{ github.repository_owner }}/my-next-app:latest
 
             echo "Deployment complete ✅"
+  notify_lambda:
+    name: Notify Lambda
+    runs-on: ubuntu-latest
+    needs: [build_and_push, deploy]
+    if: always()
+
+    steps:
+      - name: Send job result to Lambda
+        run: |
+          STATUS=${{ job.status }}
+          echo "Sending status $STATUS to Lambda..."
+          curl -X POST ${{ secrets.LAMBDA_URL }} \
+            -H "Content-Type: application/json" \
+            -d '{
+              "repository": "${{ github.repository }}",
+              "job": "CI/CD Pipeline",
+              "status": "'"$STATUS"'",
+              "details": "Run ID: ${{ github.run_id }}"
+            }'
